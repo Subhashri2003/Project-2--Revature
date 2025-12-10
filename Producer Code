@@ -1,0 +1,44 @@
+                                                                  csv_producer.py
+import boto3
+import csv
+import json
+import time
+import random
+
+STREAM_NAME = "traffic-data-datastream"   # Your Kinesis stream name
+REGION = "us-east-1"
+
+kinesis = boto3.client("kinesis", region_name=REGION)
+
+csv_file = "smart_traffic_management_dataset.csv"
+
+with open(csv_file, "r") as f:
+    reader = csv.DictReader(f)
+
+    for row in reader:
+        # Convert CSV row → JSON object
+        data = {
+            "timestamp": row["timestamp"],
+            "location_id": int(row["location_id"]),
+            "traffic_volume": int(row["traffic_volume"]),
+            "avg_vehicle_speed": float(row["avg_vehicle_speed"]),
+            "vehicle_count_cars": int(row["vehicle_count_cars"]),
+            "vehicle_count_trucks": int(row["vehicle_count_trucks"]),
+            "vehicle_count_bikes": int(row["vehicle_count_bikes"]),
+            "weather_condition": row["weather_condition"],
+            "temperature": float(row["temperature"]),
+            "humidity": float(row["humidity"]),
+            "accident_reported": int(row["accident_reported"]),
+            "signal_status": row["signal_status"]
+        }
+
+        print("Sending:", data)
+
+        # Push to your Kinesis stream
+        kinesis.put_record(
+            StreamName=STREAM_NAME,
+            Data=json.dumps(data),
+            PartitionKey=str(row["location_id"])
+        )
+
+        time.sleep(0.5)   # stream smoothly (adjust to faster/slower)
